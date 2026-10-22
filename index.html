@@ -81,6 +81,10 @@ main{max-width:1100px;margin:0 auto;padding-block:16px 140px}
 .handle.rs{left:-11px;bottom:-11px;cursor:nesw-resize}
 .handle.del{right:-11px;top:-11px;background:#b3261e;display:flex;align-items:center;justify-content:center;cursor:pointer}
 .handle.del svg{width:12px;height:12px;stroke:#fff}
+.handle.del.mini{position:absolute;right:0;top:0;width:16px;height:16px;border:0;border-radius:0 2px 0 6px;background:rgba(179,38,30,.75);box-shadow:none;opacity:.8}
+.handle.del.mini svg{width:9px;height:9px}
+@media (pointer:coarse){.handle.del.mini{width:20px;height:20px}}
+.field.empty:hover .handle.del.mini{opacity:1}
 
 .bar{position:fixed;left:0;right:0;bottom:0;z-index:20;background:var(--surface);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom,0px)}
 .bar-in{display:flex;align-items:center;gap:12px;max-width:1100px;margin:0 auto;padding-block:10px}
@@ -130,6 +134,7 @@ textarea.inp{min-height:76px;resize:vertical}
 .padx{position:absolute;right:8%;bottom:calc(28% + 6px);color:#a2a9b8;font-size:22px;pointer-events:none}
 .padfoot{display:flex;gap:10px;justify-content:space-between;align-items:center;padding-block:12px calc(env(safe-area-inset-bottom,0px) + 12px);flex-wrap:wrap}
 .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(env(safe-area-inset-bottom,0px) + 84px);z-index:60;background:var(--fg);color:var(--surface);padding:10px 16px;border-radius:12px;font-size:14px;max-width:calc(100% - 32px);text-align:center;box-shadow:var(--shadow)}
+.toast .undo{background:none;border:0;color:inherit;font-weight:700;text-decoration:underline;padding:0 2px}
 .busy{position:fixed;inset:0;z-index:70;background:rgba(10,14,25,.35);display:flex;align-items:center;justify-content:center}
 .busy div{background:var(--surface);padding:18px 22px;border-radius:14px;display:flex;gap:12px;align-items:center;box-shadow:var(--shadow)}
 .spin{width:20px;height:20px;border:3px solid var(--line);border-top-color:var(--accent);border-radius:50%;animation:sp 0.8s linear infinite}
@@ -526,7 +531,7 @@ function analyzeCanvas(src) {
         else if (cur >= 0) { if (xx - 1 - cur > best[1] - best[0]) best = [cur, xx - 1]; cur = -1; }
       }
       const ew = best[1] - best[0];
-      if (ew < Math.max(w * 0.045, 0.28 * (b - a))) continue;
+      if (ew < Math.max(w * 0.045, 0.28 * (b - a))) { if (boxed) row.inkCells = (row.inkCells || 0) + 1; continue; }
       let ex1 = best[0], ex2 = best[1];
       if (ex1 > rx1 + 2) ex1 += 4; if (ex2 < rx2 - 2) ex2 -= 4;
       let ftop = bot;
@@ -537,7 +542,9 @@ function analyzeCanvas(src) {
       }
       if (bot - ftop < h * 0.011) continue;
       if (!boxed && b - a > 0.6 * w && ftop > top + (bot - top) * 0.12) continue;
-      row.cands.push({ x: ex1 / w, y: (ftop + 1) / h, w: (ex2 - ex1) / w, h: (bot - ftop) / h, boxed, ceil, hasInk: ew < (rx2 - rx1) * 0.9 });
+      let cellInk = 0;
+      for (let yy = top + 1; yy <= bot; yy++) for (let xx = rx1 + 2; xx <= rx2 - 2; xx++) cellInk += dark[yy * w + xx];
+      row.cands.push({ x: ex1 / w, y: (ftop + 1) / h, w: (ex2 - ex1) / w, h: (bot - ftop) / h, boxed, ceil, hasInk: ew < (rx2 - rx1) * 0.9 || cellInk > 12 });
     }
     rows.push(row);
   }
@@ -546,11 +553,32 @@ function analyzeCanvas(src) {
   for (const r of rows) {
     const header = r.cands.length >= 2 && r.cands.every(c => c.boxed && c.hasInk) &&
       rows.some(o => o !== r && o.cands.length >= 2 && o.cands.every(c => c.boxed && !c.hasInk && c.ceil === r.L));
-    if (!header) for (const c of r.cands) out.push({ x: c.x, y: c.y, w: c.w, h: c.h });
+    // one table row can come out as several line pieces: judge all pieces at this height together
+    const peers = rows.filter(o => Math.abs(o.L.y - r.L.y) <= 3);
+    const cells = peers.flatMap(o => o.cands), inked = peers.reduce((n, o) => n + (o.inkCells || 0), 0);
+    const dataRow = cells.length > 0 && cells.every(c => c.hasInk) && (cells.length >= 2 || inked >= 1);
+    if (!header) for (const c of r.cands) out.push({ x: c.x, y: c.y, w: c.w, h: c.h, boxed: c.boxed, hasInk: c.hasInk, dataRow });
   }
-  const res = dedupe(out);
-  res.glyphs = findGlyphs(dark, w, h);
+  const glyphs = findGlyphs(dark, w, h);
+  const res = dedupe(out.filter(r => wantsFilling(r, glyphs)));
+  res.glyphs = glyphs;
   return res;
+}
+// a blank is worth filling only when printed words go with it: a caption beside or under a line,
+// or inside / above a box. Bare lines (separators, borders, page decoration) are skipped.
+function wantsFilling(r, glyphs) {
+  if (r.y < 0.035 || r.y + r.h > 0.975) return false;
+  if (r.boxed && r.hasInk) return true;
+  const top = r.y - r.h * 0.6, bot = r.y + r.h * 1.5, gap = 0.22;
+  let n = 0;
+  for (const g of glyphs) {
+    const gy = g.y + g.h / 2;
+    const side = gy > top && gy < bot && ((g.x + g.w <= r.x + 0.004 && r.x - (g.x + g.w) < gap) || (g.x >= r.x + r.w - 0.004 && g.x - (r.x + r.w) < gap));
+    const under = g.y > r.y + r.h && g.y < r.y + r.h * 2.8 && g.x < r.x + r.w && g.x + g.w > r.x;
+    const above = r.boxed && g.y + g.h < r.y && g.y + g.h > r.y - r.h * 1.6 && g.x < r.x + r.w && g.x + g.w > r.x;
+    if ((side || under || above) && (n += g.letter ? 1 : 2) >= 2) return true;
+  }
+  return false;
 }
 // letter-sized blobs of ink: their heights tell how big the printed text is
 function findGlyphs(dark, w, h) {
@@ -573,8 +601,8 @@ function findGlyphs(dark, w, h) {
   const out = [];
   for (const b of box.values()) {
     const gw = b.x2 - b.x1 + 1, gh = b.y2 - b.y1 + 1;
-    if (gh < h * 0.004 || gh > h * 0.035 || gw > gh * 2.2 || gw < 2) continue;
-    out.push({ x: b.x1 / w, y: b.y1 / h, w: gw / w, h: gh / h });
+    if (gh < h * 0.004 || gh > h * 0.035 || gw > gh * 12 || gw < 2) continue;
+    out.push({ x: b.x1 / w, y: b.y1 / h, w: gw / w, h: gh / h, letter: gw <= gh * 2.2 });
   }
   return out;
 }
@@ -587,7 +615,7 @@ function docTextSize(P, r) {
     if (loc.length) return median(loc);
     return median(P.textItems.map(it => it.h));
   }
-  const g = P.glyphs || [];
+  const g = (P.glyphs || []).filter(it => it.letter);
   if (!g.length) return 0;
   // lower third: plain letter height, ignoring tall letters and capitals
   const pct = a => { const s = [...a].sort((p, q) => p - q); return s[Math.floor(s.length * 0.35)]; };
@@ -605,28 +633,34 @@ function dedupe(arr) {
   for (const r of arr) if (!res.some(o => overlap(o, r) > 0.35)) res.push(r);
   return res;
 }
-function guessType(P, r) {
-  const items = P.textItems; if (!items.length) return { type: 'text', label: '' };
+function itemText(it) {
+  const s = it.str.replace(/[_…]+/g, ' ').replace(/\.{2,}/g, ' ').trim();
+  // some PDFs store Hebrew in visual order: a final letter at the start gives it away
+  return /[\u0590-\u05FF]/.test(s) && /^[^\u0590-\u05FF]*[\u05DA\u05DD\u05DF\u05E3\u05E5]/.test(s) ? [...s].reverse().join('') : s;
+}
+function guessType(P, r, others = []) {
+  const items = P.textItems; if (!items.length) return { type: 'text', label: '', colon: false };
   const cy = r.y + r.h / 2;
-  let best = null, bd = Infinity;
-  for (const it of items) {
-    const s = it.str.replace(/[_.…\-–:]+/g, ' ').trim(); if (!s) continue;
-    const icy = it.y + it.h / 2;
-    const vOk = Math.abs(icy - cy) < Math.max(r.h, it.h) * 0.9;
-    let dist = Infinity;
-    if (vOk) {
-      if (it.x >= r.x + r.w - 0.01) dist = it.x - (r.x + r.w);
-      else if (it.x + it.w <= r.x + 0.01) dist = r.x - (it.x + it.w);
-    } else if (it.y + it.h <= r.y + 0.005 && r.y - (it.y + it.h) < r.h * 1.6 && it.x < r.x + r.w && it.x + it.w > r.x) {
-      dist = (r.y - (it.y + it.h)) * 2 + 0.02;
-    }
-    if (dist < bd && dist < 0.3) { bd = dist; best = s; }
+  const row = items.filter(it => it.str.trim() && Math.abs(it.y + it.h / 2 - cy) < Math.max(r.h, it.h) * 0.9);
+  const mates = others.filter(o => o !== r && Math.abs(o.y + o.h / 2 - cy) < r.h);
+  // the caption sits between this blank and the next blank (or 30% of the page) on each side
+  const rLim = Math.min(r.x + r.w + 0.3, ...mates.filter(o => o.x >= r.x + r.w - 0.005).map(o => o.x));
+  const lLim = Math.max(r.x - 0.3, ...mates.filter(o => o.x + o.w <= r.x + 0.005).map(o => o.x + o.w));
+  const right = row.filter(it => it.x >= r.x + r.w - 0.01 && it.x < rLim).sort((a, b) => b.x - a.x);
+  const left = row.filter(it => it.x + it.w <= r.x + 0.01 && it.x + it.w > lLim).sort((a, b) => a.x - b.x);
+  const join = a => a.map(itemText).join(' ').replace(/\s+/g, ' ').trim();
+  const rs = join(right), ls = join(left), heb = s => /[\u0590-\u05FF]/.test(s);
+  let raw = heb(rs) ? rs : (ls && !heb(ls) ? ls : rs || ls);
+  if (!raw) {
+    const above = items.filter(it => it.y + it.h <= r.y + 0.005 && r.y - (it.y + it.h) < r.h * 1.6 && it.x < r.x + r.w && it.x + it.w > r.x);
+    const lowest = Math.max(...above.map(it => it.y + it.h));
+    raw = join(above.filter(it => it.y + it.h > lowest - r.h * 0.5).sort((a, b) => b.x - a.x));
   }
-  if (!best) return { type: 'text', label: '' };
-  const rev = [...best].reverse().join('');
-  const t = /תאריך|date|dated/i.test(best) || /ךיראת/.test(best) ? 'date' : /חתימ|signature|sign\b|signed/i.test(best) || /מיתח/.test(best) ? 'signature' : 'text';
-  let label = /[֐-׿]/.test(best) && /^[^֐-׿]*[ךםןףץ]/.test(best) ? rev : best;
-  return { type: t, label: label.slice(0, 40) };
+  if (!raw) return { type: 'text', label: '', colon: false };
+  const colon = /:/.test(raw);
+  const label = raw.replace(/[:\s]+$|^[:\s]+/g, '').replace(/\s*:\s*/g, ' ').trim();
+  const t = /תאריך|date|dated/i.test(label) ? 'date' : /חתימ|signature|\bsign/i.test(label) ? 'signature' : 'text';
+  return { type: t, label: label.slice(0, 40), colon };
 }
 function autoDetect() {
   S.fields = [];
@@ -635,7 +669,9 @@ function autoDetect() {
     const found = all.filter(r => !P.widgets.some(wd => overlap(wd, r) > 0.2));
     for (const wd of P.widgets) addField(P.idx, wd.x, wd.y, wd.w, wd.h, wd.type, wd.label);
     for (const r of found) {
-      const g = guessType(P, r);
+      const g = guessType(P, r, found);
+      // a row of filled table cells (prices, totals) is printed data, not blanks
+      if (r.dataRow && !g.colon) continue;
       addField(P.idx, r.x, r.y, r.w, r.h, g.type, g.label);
     }
   }
@@ -715,6 +751,7 @@ function render() {
     el.dataset.id = f.id; el.tabIndex = 0; el.setAttribute('role', 'button');
     el.setAttribute('aria-label', `${TYPE_NAME[f.type]}${f.label ? ': ' + f.label : ''}`);
     el.innerHTML = fieldInner(f);
+    if (S.sel !== f.id && !filled(f)) el.insertAdjacentHTML('beforeend', `<span class="handle del mini" data-h="del" title="זה לא שדה למילוי" aria-label="מחיקת השדה"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18" fill="none" stroke-width="3" stroke-linecap="round"/></svg></span>`);
     if (S.sel === f.id) {
       el.insertAdjacentHTML('beforeend', `<span class="handle rs" data-h="rs" title="שינוי גודל"></span><span class="handle del" data-h="del" title="מחיקה"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18" fill="none" stroke-width="3" stroke-linecap="round"/></svg></span>`);
     }
@@ -758,7 +795,13 @@ function onFieldDown(e, f, el) {
   if (S.place) return;
   e.stopPropagation();
   const h = e.target.closest('[data-h]');
-  if (h && h.dataset.h === 'del') { e.preventDefault(); removeField(f); return; }
+  if (h && h.dataset.h === 'del') {
+    e.preventDefault();
+    const x0 = e.clientX, y0 = e.clientY;
+    const up = ev => { el.removeEventListener('pointerup', up); if (Math.hypot(ev.clientX - x0, ev.clientY - y0) < 8) removeField(f, true); };
+    el.addEventListener('pointerup', up);
+    return;
+  }
   const P = S.pages[f.page], r = P.el.getBoundingClientRect();
   const sx = e.clientX, sy = e.clientY, o = { x: f.x, y: f.y, w: f.w, h: f.h };
   const resizing = h && h.dataset.h === 'rs';
@@ -793,10 +836,19 @@ function onFieldDown(e, f, el) {
   };
   el.addEventListener('pointermove', move); el.addEventListener('pointerup', up); el.addEventListener('pointercancel', up);
 }
-function removeField(f) {
+let lastRemoved = null;
+function removeField(f, offerUndo = true) {
+  lastRemoved = f;
   S.fields = S.fields.filter(x => x !== f);
   if (S.sel === f.id) S.sel = null;
   closeEditor(); render();
+  if (offerUndo) toastUndo('השדה הוסר');
+}
+function toastUndo(msg) {
+  const t = $('toast'); t.innerHTML = ''; t.append(msg + ' · ');
+  const b = document.createElement('button'); b.textContent = 'ביטול'; b.className = 'undo';
+  b.onclick = () => { if (lastRemoved) { S.fields.push(lastRemoved); sortFields(); lastRemoved = null; render(); } t.hidden = true; };
+  t.append(b); t.hidden = false; clearTimeout(toastT); toastT = setTimeout(() => t.hidden = true, 5000);
 }
 
 /* ---------- editor ---------- */

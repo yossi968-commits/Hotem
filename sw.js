@@ -1,4 +1,4 @@
-const CACHE = 'hotem-v3';
+const CACHE = 'hotem-v4';
 const SHARE = 'hotem-share';
 const SHELL = ['./', 'index.html', 'pdf.worker.min.js', 'manifest.webmanifest', 'icon.svg', 'icon-192.png', 'icon-512.png',
   'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js', 'https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js'];
