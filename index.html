@@ -1,0 +1,1169 @@
+<!doctype html><html lang="he" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#1f3fbf"><link rel="manifest" href="manifest.webmanifest"><link rel="icon" href="icon.svg"><link rel="apple-touch-icon" href="icon-192.png"><meta name="apple-mobile-web-app-capable" content="yes"><style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}</style></head><body>
+<title>חותם</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;600;700&family=Frank+Ruhl+Libre:wght@700&family=Amatic+SC:wght@700&display=swap">
+<style>
+/* Layout: a desk. Sticky tool strip on top, the document as paper in the middle, a fixed action bar at the bottom; field editing happens in a bottom sheet. */
+:root{
+  --desk:#e9ecf2; --surface:#ffffff; --fg:#1a1e29; --muted:#5b6476; --line:#d3d8e2;
+  --accent:#1f3fbf; --accent-fg:#ffffff; --accent-soft:rgba(31,63,191,.09);
+  --pen:#1f3fbf; --ok:#1d7a4c; --danger:#b3261e; --shadow:0 1px 2px rgba(20,30,60,.08),0 8px 24px rgba(20,30,60,.10);
+  --f-brand:"Frank Ruhl Libre","David",Georgia,serif;
+  --f-ui:"Assistant","Arial Hebrew","Segoe UI",Arial,sans-serif;
+  --f-hand:"Amatic SC","Assistant",cursive;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --desk:#111520; --surface:#1a1f2c; --fg:#e6e9f0; --muted:#9aa3b6; --line:#2d3445;
+  --accent:#8ea6ff; --accent-fg:#0d1330; --accent-soft:rgba(142,166,255,.14);
+  --shadow:0 1px 2px rgba(0,0,0,.4),0 8px 24px rgba(0,0,0,.35); color-scheme:dark }}
+:root[data-theme="dark"]{
+  --desk:#111520; --surface:#1a1f2c; --fg:#e6e9f0; --muted:#9aa3b6; --line:#2d3445;
+  --accent:#8ea6ff; --accent-fg:#0d1330; --accent-soft:rgba(142,166,255,.14);
+  --shadow:0 1px 2px rgba(0,0,0,.4),0 8px 24px rgba(0,0,0,.35); color-scheme:dark }
+[hidden]{display:none!important}
+*{box-sizing:border-box}
+html,body{min-height:100%}
+body{background:var(--desk);color:var(--fg);font-family:var(--f-ui);font-size:16px;line-height:1.45;direction:rtl;-webkit-tap-highlight-color:transparent}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:30;background:var(--surface)}
+button,input,textarea,select{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.gutter{padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+
+header.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:var(--surface);border-bottom:1px solid var(--line)}
+.top-in{display:flex;align-items:center;gap:12px;padding-block:10px;max-width:1100px;margin:0 auto}
+.brand{display:flex;align-items:baseline;gap:8px;flex:none}
+.brand b{font-family:var(--f-brand);font-size:26px;letter-spacing:.01em;color:var(--fg)}
+.brand .seal{width:26px;height:26px;align-self:center}
+.brand small{color:var(--muted);font-size:13px}
+.tools{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;flex:1;min-width:0;padding-block:2px}
+.tools::-webkit-scrollbar{display:none}
+.tbtn{flex:none;display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:7px 13px;font-size:14px;font-weight:600;white-space:nowrap}
+.tbtn svg{width:17px;height:17px;flex:none}
+.tbtn:hover{border-color:var(--accent)}
+.tbtn.on{background:var(--accent);color:var(--accent-fg);border-color:var(--accent)}
+.tbtn.primary{background:var(--accent);color:var(--accent-fg);border-color:var(--accent)}
+.sep{width:1px;background:var(--line);flex:none;margin:4px 2px}
+@media (max-width:560px){.brand small{display:none}.top-in{gap:8px}}
+
+main{max-width:1100px;margin:0 auto;padding-block:16px 140px}
+.banner{display:flex;flex-wrap:wrap;align-items:center;gap:10px 16px;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px 16px;margin-bottom:16px}
+.banner p{margin:0;flex:1 1 260px;min-width:0;color:var(--muted)}
+.banner p strong{color:var(--fg)}
+.banner .acts{display:flex;gap:8px;flex-wrap:wrap}
+.drop{border:2px dashed var(--line);border-radius:14px;padding:18px;text-align:center;color:var(--muted);margin-bottom:16px;transition:border-color .15s,background .15s}
+.drop.over{border-color:var(--accent);background:var(--accent-soft);color:var(--fg)}
+.hint{position:sticky;top:calc(env(safe-area-inset-top,0px) + 64px);z-index:15;margin:0 auto 12px;width:max-content;max-width:100%;background:var(--fg);color:var(--surface);padding:8px 14px;border-radius:999px;font-size:14px;display:flex;gap:10px;align-items:center}
+.hint button{background:none;border:0;color:inherit;text-decoration:underline;padding:0}
+
+.pages{display:flex;flex-direction:column;align-items:center;gap:18px}
+.pagewrap{width:100%;max-width:880px}
+.pagelabel{font-size:12px;color:var(--muted);margin:0 4px 6px;letter-spacing:.04em;font-variant-numeric:tabular-nums}
+.page{position:relative;width:100%;background:#fff;box-shadow:var(--shadow);container-type:inline-size;user-select:none;-webkit-user-select:none;touch-action:pan-x pan-y pinch-zoom}
+.page canvas{display:block;width:100%;height:auto}
+.overlay{position:absolute;inset:0}
+.page.placing{cursor:crosshair}
+.field{position:absolute;direction:rtl;color:var(--pen);border-radius:2px;cursor:pointer;overflow:hidden}
+.field.empty{background:rgba(31,63,191,.07);outline:1.5px dashed rgba(31,63,191,.55);outline-offset:-1px}
+.field.empty:hover{background:rgba(31,63,191,.13)}
+.field.sel{outline:2px solid #1f3fbf;outline-offset:1px;overflow:visible;touch-action:none;z-index:3}
+.field.filled:not(.sel):hover{outline:1px dashed rgba(31,63,191,.5)}
+.field .ph{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;gap:.4em;font-size:clamp(9px,1.5cqw,13px);color:rgba(31,63,191,.75);font-family:var(--f-ui);font-weight:600;white-space:nowrap;overflow:hidden;padding:0 4px;pointer-events:none}
+.field .ph svg{width:1.2em;height:1.2em;flex:none}
+.field .txt{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:flex-end;white-space:pre-wrap;word-break:break-word;line-height:1.25;padding:0 .15em .1em;pointer-events:none;overflow:hidden}
+.field .txt.hand{font-family:var(--f-hand)}
+.field .txt.reg{font-family:var(--f-ui)}
+.field img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;pointer-events:none}
+.field svg.chk{position:absolute;inset:8%;width:84%;height:84%;pointer-events:none}
+.handle{position:absolute;width:22px;height:22px;border-radius:50%;background:#1f3fbf;border:2px solid #fff;box-shadow:0 1px 3px rgba(0,0,0,.3);touch-action:none;z-index:4}
+.handle.rs{left:-11px;bottom:-11px;cursor:nesw-resize}
+.handle.del{right:-11px;top:-11px;background:#b3261e;display:flex;align-items:center;justify-content:center;cursor:pointer}
+.handle.del svg{width:12px;height:12px;stroke:#fff}
+
+.bar{position:fixed;left:0;right:0;bottom:0;z-index:20;background:var(--surface);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom,0px)}
+.bar-in{display:flex;align-items:center;gap:12px;max-width:1100px;margin:0 auto;padding-block:10px}
+.stat{flex:1;min-width:0;color:var(--muted);font-size:14px;font-variant-numeric:tabular-nums}
+.stat b{color:var(--fg)}
+.meter{height:4px;background:var(--line);border-radius:4px;margin-top:5px;overflow:hidden;max-width:260px}
+.meter i{display:block;height:100%;background:var(--ok);width:0;transition:width .3s}
+.btn{border:1px solid var(--line);background:var(--surface);border-radius:12px;padding:11px 18px;font-weight:700;font-size:15px;display:inline-flex;align-items:center;justify-content:center;gap:8px}
+.btn svg{width:18px;height:18px}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-fg)}
+.btn.ghost{background:transparent}
+.btn.danger{color:var(--danger)}
+.btn:disabled{opacity:.5;cursor:default}
+
+.sheet-bg{position:fixed;inset:0;background:rgba(10,14,25,.45);z-index:40}
+.sheet{position:fixed;left:0;right:0;bottom:0;z-index:41;background:var(--surface);border-radius:18px 18px 0 0;box-shadow:0 -8px 30px rgba(0,0,0,.2);max-height:88vh;overflow:auto;padding-bottom:env(safe-area-inset-bottom,0px)}
+.sheet-in{max-width:640px;margin:0 auto;padding-block:16px 20px;display:flex;flex-direction:column;gap:14px}
+.sheet h2{margin:0;font-size:19px;font-family:var(--f-ui);font-weight:700}
+.sheet .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.sheet .row>.grow{flex:1 1 200px;min-width:0}
+.grab{width:40px;height:4px;border-radius:4px;background:var(--line);margin:0 auto}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chip{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:6px 12px;font-size:14px;font-weight:600}
+.chip.on{background:var(--accent-soft);border-color:var(--accent);color:var(--accent)}
+label.lbl{font-size:13px;color:var(--muted);font-weight:600}
+textarea.inp,input.inp{width:100%;border:1px solid var(--line);border-radius:10px;padding:10px 12px;background:var(--desk);font-size:17px}
+textarea.inp{min-height:76px;resize:vertical}
+.ink{color:var(--pen)}
+.sigprev{height:90px;border:1px solid var(--line);border-radius:10px;background:#fff;display:flex;align-items:center;justify-content:center;flex:1 1 200px}
+.sigprev img{max-height:80px;max-width:100%}
+.note{font-size:14px;color:var(--muted);margin:0}
+.note.ok{color:var(--ok)}
+.note.err{color:var(--danger)}
+.shareg{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.shareg .btn{padding:14px 10px}
+.shareg .wide{grid-column:1/-1}
+.wa{color:#128c4a}
+.steps{margin:0;padding:12px 14px;border-radius:12px;background:var(--accent-soft);display:flex;flex-direction:column;gap:8px}
+.steps a{color:var(--accent);font-weight:700}
+
+.padwrap{position:fixed;inset:0;z-index:50;background:var(--surface);display:flex;flex-direction:column}
+.padhead{display:flex;align-items:center;justify-content:space-between;gap:10px;padding-block:calc(env(safe-area-inset-top,0px) + 12px) 10px;border-bottom:1px solid var(--line)}
+.padhead h2{margin:0;font-size:18px}
+.padarea{flex:1;position:relative;background:#fff;margin:16px max(16px,env(safe-area-inset-left,0px)) 0 max(16px,env(safe-area-inset-right,0px));border-radius:14px;border:1px solid var(--line);overflow:hidden;min-height:180px}
+.padarea canvas{position:absolute;inset:0;width:100%;height:100%;touch-action:none;cursor:crosshair}
+.padline{position:absolute;left:8%;right:8%;bottom:28%;border-bottom:1.5px solid #c7ccd8;pointer-events:none}
+.padx{position:absolute;right:8%;bottom:calc(28% + 6px);color:#a2a9b8;font-size:22px;pointer-events:none}
+.padfoot{display:flex;gap:10px;justify-content:space-between;align-items:center;padding-block:12px calc(env(safe-area-inset-bottom,0px) + 12px);flex-wrap:wrap}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(env(safe-area-inset-bottom,0px) + 84px);z-index:60;background:var(--fg);color:var(--surface);padding:10px 16px;border-radius:12px;font-size:14px;max-width:calc(100% - 32px);text-align:center;box-shadow:var(--shadow)}
+.busy{position:fixed;inset:0;z-index:70;background:rgba(10,14,25,.35);display:flex;align-items:center;justify-content:center}
+.busy div{background:var(--surface);padding:18px 22px;border-radius:14px;display:flex;gap:12px;align-items:center;box-shadow:var(--shadow)}
+.spin{width:20px;height:20px;border:3px solid var(--line);border-top-color:var(--accent);border-radius:50%;animation:sp 0.8s linear infinite}
+@keyframes sp{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.spin{animation-duration:3s}.meter i{transition:none}}
+</style>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-text" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 6h14M12 6v13M9 19h6"/></symbol>
+  <symbol id="i-date" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 10h16M9 3v4M15 3v4"/></symbol>
+  <symbol id="i-sign" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17c3-6 5-9 6-8s-2 8 0 8 3-5 4-5 0 4 2 4 3-2 6-3"/><path d="M3 21h18"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6.5"/></symbol>
+  <symbol id="i-up" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4M7 9l5-5 5 5M4 20h16"/></symbol>
+  <symbol id="i-cam" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></symbol>
+  <symbol id="i-scan" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 8V5a1 1 0 011-1h3M16 4h3a1 1 0 011 1v3M20 16v3a1 1 0 01-1 1h-3M8 20H5a1 1 0 01-1-1v-3M7 12h10"/></symbol>
+  <symbol id="i-spark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M12 3l2 6 6 2-6 2-2 6-2-6-6-2 6-2z"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></symbol>
+  <symbol id="i-send" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M21 3L10 14M21 3l-7 18-4-7-7-4z"/></symbol>
+  <symbol id="i-dl" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v12M7 11l5 5 5-5M4 20h16"/></symbol>
+  <symbol id="i-mail" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></symbol>
+  <symbol id="i-wa" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a10 10 0 00-8.6 15.1L2 22l5-1.3A10 10 0 1012 2zm0 18.2c-1.6 0-3.1-.4-4.4-1.2l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1112 20.2zm4.5-6.1c-.2-.1-1.5-.7-1.7-.8-.2-.1-.4-.1-.6.1l-.8 1c-.1.2-.3.2-.5.1a6.7 6.7 0 01-3.3-2.9c-.2-.4.2-.4.7-1.3.1-.2 0-.3 0-.4l-.8-1.8c-.2-.5-.4-.4-.6-.4h-.5a1 1 0 00-.7.3c-.2.3-.9.9-.9 2.2s1 2.6 1.1 2.7c.1.2 1.9 2.9 4.6 4.1 1.7.7 2.4.8 3.2.7.5-.1 1.5-.6 1.7-1.2.2-.6.2-1.1.2-1.2-.1-.1-.3-.2-.5-.3z"/></symbol>
+  <symbol id="i-share" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.6 13.5l6.8 4M15.4 6.5l-6.8 4"/></symbol>
+</svg>
+
+<header class="top">
+  <div class="top-in gutter">
+    <div class="brand">
+      <svg class="seal" viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="14" fill="none" stroke="#1f3fbf" stroke-width="2.2"/><path d="M8 19c3-5 4.5-7.5 5.5-7s-1.5 6.5 0 6.5 2.5-4 3.5-4 0 3 1.5 3 2.5-1.5 5-2.5" fill="none" stroke="#1f3fbf" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <b>חותם</b><small>מילוי וחתימה על מסמכים</small>
+    </div>
+    <div class="tools" id="tools" role="toolbar" aria-label="כלים">
+      <button class="tbtn primary" id="bUpload"><svg><use href="#i-up"/></svg>מסמך חדש</button>
+      <span class="sep"></span>
+      <button class="tbtn" data-add="text"><svg><use href="#i-text"/></svg>טקסט</button>
+      <button class="tbtn" data-add="date"><svg><use href="#i-date"/></svg>תאריך</button>
+      <button class="tbtn" data-add="signature"><svg><use href="#i-sign"/></svg>חתימה</button>
+      <button class="tbtn" data-add="checkbox"><svg><use href="#i-check"/></svg>סימון</button>
+      <span class="sep"></span>
+      <button class="tbtn" id="bRedetect"><svg><use href="#i-scan"/></svg>זיהוי מחדש</button>
+      <button class="tbtn" id="bSmart" hidden><svg><use href="#i-spark"/></svg>זיהוי חכם</button>
+    </div>
+  </div>
+</header>
+
+<main class="gutter" id="main">
+  <div class="banner" id="sampleBanner" hidden>
+    <p><strong>זהו טופס לדוגמה.</strong> נסו להקיש על השדות המסומנים, או העלו מסמך משלכם: קובץ PDF או צילום של דף.</p>
+    <div class="acts">
+      <button class="btn primary" id="bUpload2"><svg><use href="#i-up"/></svg>העלאת מסמך</button>
+      <button class="btn" id="bCamera"><svg><use href="#i-cam"/></svg>צילום מסמך</button>
+    </div>
+  </div>
+  <div class="drop" id="drop" hidden>אפשר גם לגרור לכאן קובץ PDF או תמונה</div>
+  <div class="hint" id="placeHint" hidden><span id="placeText">הקישו על המסמך במקום שבו להוסיף את השדה</span><button id="placeCancel">ביטול</button></div>
+  <div class="pages" id="pages"></div>
+</main>
+
+<div class="bar">
+  <div class="bar-in gutter">
+    <div class="stat" id="stat"><span id="statText">אין מסמך</span><div class="meter"><i id="meter"></i></div></div>
+    <button class="btn primary" id="bFinish"><svg><use href="#i-send"/></svg>סיום ושליחה</button>
+  </div>
+</div>
+
+<input type="file" id="fileIn" accept="application/pdf,image/*" multiple hidden>
+<input type="file" id="camIn" accept="image/*" capture="environment" hidden>
+
+<!-- field editor -->
+<div class="sheet-bg" id="edBg" hidden></div>
+<div class="sheet" id="ed" hidden role="dialog" aria-label="עריכת שדה">
+  <div class="sheet-in gutter">
+    <div class="grab"></div>
+    <div class="row" style="justify-content:space-between">
+      <h2 id="edTitle">שדה</h2>
+      <div class="chips" id="edTypes">
+        <button class="chip" data-type="text">טקסט</button>
+        <button class="chip" data-type="date">תאריך</button>
+        <button class="chip" data-type="signature">חתימה</button>
+        <button class="chip" data-type="checkbox">סימון</button>
+      </div>
+    </div>
+    <div id="edText" hidden>
+      <label class="lbl" for="edInput" id="edLabel">טקסט</label>
+      <textarea class="inp ink" id="edInput" dir="auto" rows="2" placeholder="כתבו כאן בעברית או באנגלית"></textarea>
+      <div class="row" style="margin-top:10px">
+        <div class="chips">
+          <button class="chip" id="fsDown" aria-label="הקטנת גופן">א−</button>
+          <button class="chip" id="fsUp" aria-label="הגדלת גופן">א+</button>
+        </div>
+        <div class="chips">
+          <button class="chip" data-font="reg">כתב רגיל</button>
+          <button class="chip" data-font="hand" style="font-family:var(--f-hand);font-size:17px">כתב יד</button>
+        </div>
+      </div>
+      <div class="row" id="edDateRow" style="margin-top:10px" hidden>
+        <input type="date" class="inp grow" id="edDate" style="font-size:16px">
+        <button class="btn" id="edToday">היום</button>
+      </div>
+    </div>
+    <div id="edSig" hidden>
+      <div class="row">
+        <div class="sigprev" id="edSigPrev"><span class="note">עדיין אין חתימה</span></div>
+      </div>
+      <div class="row" style="margin-top:10px">
+        <button class="btn primary" id="edSigNew"><svg><use href="#i-sign"/></svg>חתימה חדשה</button>
+        <button class="btn" id="edSigClear">הסרה מהשדה</button>
+      </div>
+    </div>
+    <div id="edChk" hidden>
+      <div class="row"><button class="btn" id="edChkToggle"><svg><use href="#i-check"/></svg><span id="edChkLabel">סמנו</span></button></div>
+    </div>
+    <div class="row" style="justify-content:space-between">
+      <button class="btn ghost danger" id="edDel">מחיקת השדה</button>
+      <div class="row">
+        <button class="btn" id="edNext">לשדה הבא</button>
+        <button class="btn primary" id="edDone">סיום</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- export -->
+<div class="sheet-bg" id="exBg" hidden></div>
+<div class="sheet" id="ex" hidden role="dialog" aria-label="שמירה ושליחה">
+  <div class="sheet-in gutter">
+    <div class="grab"></div>
+    <h2>שמירה ושליחה</h2>
+    <div>
+      <label class="lbl" for="exName">שם הקובץ</label>
+      <input class="inp" id="exName" dir="auto">
+    </div>
+    <p class="note" id="exWarn" hidden></p>
+    <div class="shareg">
+      <button class="btn primary wide" id="exShare" hidden><svg><use href="#i-share"/></svg>שיתוף (וואטסאפ, מייל ועוד)</button>
+      <button class="btn wa" id="exWa"><svg><use href="#i-wa"/></svg>וואטסאפ</button>
+      <button class="btn" id="exMail"><svg><use href="#i-mail"/></svg>מייל</button>
+      <button class="btn wide" id="exSave"><svg><use href="#i-dl"/></svg>שמירת PDF</button>
+    </div>
+    <div class="steps" id="exSteps" hidden></div>
+    <p class="note" id="exStatus"></p>
+  </div>
+</div>
+
+<!-- signature pad -->
+<div class="padwrap" id="pad" hidden role="dialog" aria-label="חתימה">
+  <div class="padhead gutter"><h2>חתמו באצבע או בעכבר</h2><button class="btn ghost" id="padCancel">ביטול</button></div>
+  <div class="padarea" id="padArea"><div class="padline"></div><div class="padx">✕</div><canvas id="padCv"></canvas></div>
+  <div class="padfoot gutter">
+    <button class="btn" id="padClear">ניקוי</button>
+    <button class="btn primary" id="padOk"><svg><use href="#i-check"/></svg>שמירת החתימה</button>
+  </div>
+</div>
+
+<div class="toast" id="toast" hidden></div>
+<div class="busy" id="busy" hidden><div><span class="spin"></span><span id="busyText">רגע…</span></div></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
+<script>
+(() => {
+'use strict';
+const PEN = '#1f3fbf';
+const $ = id => document.getElementById(id);
+const TYPE_NAME = {text:'טקסט', date:'תאריך', signature:'חתימה', checkbox:'סימון'};
+const S = { kind:null, bytes:null, pdf:null, pages:[], fields:[], sel:null, place:null, sig:null, name:'מסמך', sample:false };
+let uid = 1;
+
+try { pdfjsLib.GlobalWorkerOptions.workerSrc = 'pdf.worker.min.js'; } catch (e) {}
+try { const s = localStorage.getItem('hotem.sig'); if (s) S.sig = s; } catch (e) {}
+
+/* ---------- helpers ---------- */
+let toastT;
+function toast(msg, ms = 2600) { const t = $('toast'); t.textContent = msg; t.hidden = false; clearTimeout(toastT); toastT = setTimeout(() => t.hidden = true, ms); }
+function busy(msg) { $('busyText').textContent = msg; $('busy').hidden = false; }
+function idle() { $('busy').hidden = true; }
+const tick = () => new Promise(r => setTimeout(r, 0));
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+function todayStr(d = new Date()) { const p = n => String(n).padStart(2, '0'); return `${p(d.getDate())}/${p(d.getMonth() + 1)}/${d.getFullYear()}`; }
+function isRtl(s) { const m = s.match(/[֐-׿؀-ۿ]|[A-Za-z]/); return !m || /[֐-ۿ]/.test(m[0]); }
+function useIcon(id) { return `<svg><use href="#${id}"/></svg>`; }
+const ICON = {text:'i-text', date:'i-date', signature:'i-sign', checkbox:'i-check'};
+
+/* ---------- loading ---------- */
+async function openFiles(list) {
+  const files = [...list];
+  if (!files.length) return;
+  const pdf = files.find(f => f.type === 'application/pdf' || /\.pdf$/i.test(f.name));
+  busy('טוען את המסמך…');
+  try {
+    if (pdf) await loadPdf(pdf);
+    else await loadImages(files.filter(f => f.type.startsWith('image/') || /\.(jpe?g|png|webp|heic|gif|bmp)$/i.test(f.name)));
+    S.name = (pdf || files[0]).name.replace(/\.[^.]+$/, '') || 'מסמך';
+    S.sample = false;
+    $('sampleBanner').hidden = true;
+    buildPages();
+    busy('מזהה שדות למילוי…'); await tick();
+    autoDetect();
+    render();
+    const n = S.fields.length;
+    toast(n ? `זוהו ${n} שדות למילוי. הקישו על שדה כדי למלא` : 'לא זוהו שדות. הוסיפו שדות מסרגל הכלים');
+  } catch (e) {
+    console.error(e);
+    toast(e && e.name === 'PasswordException' ? 'המסמך מוגן בסיסמה ולא ניתן לפתוח אותו' : 'לא הצלחנו לפתוח את הקובץ. נסו PDF או תמונה (JPG, PNG)', 4000);
+  } finally { idle(); }
+}
+
+async function loadPdf(file) {
+  const bytes = new Uint8Array(await file.arrayBuffer());
+  S.bytes = bytes.slice();
+  const pdf = await pdfjsLib.getDocument({ data: bytes }).promise;
+  S.kind = 'pdf'; S.pdf = pdf; S.pages = []; S.fields = [];
+  for (let i = 1; i <= pdf.numPages; i++) {
+    busy(`טוען עמוד ${i} מתוך ${pdf.numPages}…`); await tick();
+    const page = await pdf.getPage(i);
+    const vp1 = page.getViewport({ scale: 1 });
+    const scale = clamp(1700 / vp1.width, 1, 4);
+    const vp = page.getViewport({ scale });
+    const cv = document.createElement('canvas');
+    cv.width = Math.round(vp.width); cv.height = Math.round(vp.height);
+    const cx = cv.getContext('2d', { willReadFrequently: true });
+    cx.fillStyle = '#fff'; cx.fillRect(0, 0, cv.width, cv.height);
+    await page.render({ canvasContext: cx, viewport: vp, annotationMode: pdfjsLib.AnnotationMode ? pdfjsLib.AnnotationMode.ENABLE_FORMS : undefined }).promise;
+    const P = { idx: i - 1, wPt: vp1.width, hPt: vp1.height, vp1, rotation: page.rotate || 0, canvas: cv, textItems: [], widgets: [] };
+    try {
+      const tc = await page.getTextContent();
+      for (const it of tc.items) {
+        if (!it.str || !it.str.trim()) continue;
+        const t = pdfjsLib.Util.transform(vp1.transform, it.transform);
+        const fh = Math.hypot(t[2], t[3]) || 10;
+        const w = (it.width || 0) * (vp1.scale || 1);
+        P.textItems.push({ x: t[4] / vp1.width, y: (t[5] - fh) / vp1.height, w: w / vp1.width, h: fh / vp1.height, str: it.str });
+      }
+    } catch (e) {}
+    try {
+      const anns = await page.getAnnotations();
+      for (const a of anns) {
+        if (a.subtype !== 'Widget' || a.hidden) continue;
+        const r = vp1.convertToViewportRectangle(a.rect);
+        const x = Math.min(r[0], r[2]) / vp1.width, y = Math.min(r[1], r[3]) / vp1.height;
+        const w = Math.abs(r[2] - r[0]) / vp1.width, h = Math.abs(r[3] - r[1]) / vp1.height;
+        let type = null;
+        if (a.fieldType === 'Tx') type = 'text';
+        else if (a.fieldType === 'Sig') type = 'signature';
+        else if (a.fieldType === 'Btn' && a.checkBox) type = 'checkbox';
+        if (!type || w <= 0 || h <= 0) continue;
+        const nm = (a.alternativeText || a.fieldName || '');
+        if (type === 'text' && /date|תאריך/i.test(nm)) type = 'date';
+        if (type === 'text' && /sign|חתימ/i.test(nm)) type = 'signature';
+        P.widgets.push({ x, y, w, h, type, label: a.alternativeText || '' });
+      }
+    } catch (e) {}
+    S.pages.push(P);
+  }
+}
+
+function fileToImage(file) {
+  return new Promise((res, rej) => { const u = URL.createObjectURL(file); const im = new Image(); im.onload = () => res(im); im.onerror = rej; im.src = u; });
+}
+async function loadImages(files) {
+  if (!files.length) throw new Error('no images');
+  S.kind = 'images'; S.pdf = null; S.bytes = null; S.pages = []; S.fields = [];
+  for (const f of files) {
+    const im = await fileToImage(f);
+    addImagePage(im, im.naturalWidth, im.naturalHeight);
+  }
+}
+function addImagePage(src, iw, ih, textItems = []) {
+  const k = Math.min(1, 2200 / Math.max(iw, ih));
+  const cv = document.createElement('canvas');
+  cv.width = Math.round(iw * k); cv.height = Math.round(ih * k);
+  const cx = cv.getContext('2d', { willReadFrequently: true });
+  cx.fillStyle = '#fff'; cx.fillRect(0, 0, cv.width, cv.height);
+  cx.drawImage(src, 0, 0, cv.width, cv.height);
+  const wPt = 595.28, hPt = wPt * cv.height / cv.width;
+  S.pages.push({ idx: S.pages.length, wPt, hPt, rotation: 0, canvas: cv, textItems, widgets: [] });
+}
+
+/* ---------- field detection ---------- */
+function analyzeCanvas(src) {
+  const k = Math.min(1, 1300 / src.width);
+  const w = Math.round(src.width * k), h = Math.round(src.height * k);
+  const c = document.createElement('canvas'); c.width = w; c.height = h;
+  const x = c.getContext('2d', { willReadFrequently: true }); x.drawImage(src, 0, 0, w, h);
+  const d = x.getImageData(0, 0, w, h).data;
+  const N = w * h, lum = new Float32Array(N);
+  for (let i = 0, j = 0; i < N; i++, j += 4) lum[i] = 0.299 * d[j] + 0.587 * d[j + 1] + 0.114 * d[j + 2];
+  // adaptive threshold via integral image
+  const W1 = w + 1, I = new Float64Array(W1 * (h + 1));
+  for (let yy = 0; yy < h; yy++) { let row = 0; for (let xx = 0; xx < w; xx++) { row += lum[yy * w + xx]; I[(yy + 1) * W1 + xx + 1] = I[yy * W1 + xx + 1] + row; } }
+  const R = Math.max(8, Math.round(w / 45));
+  const dark = new Uint8Array(N);
+  for (let yy = 0; yy < h; yy++) {
+    const y0 = Math.max(0, yy - R), y1 = Math.min(h, yy + R + 1);
+    for (let xx = 0; xx < w; xx++) {
+      const x0 = Math.max(0, xx - R), x1 = Math.min(w, xx + R + 1);
+      const s = I[y1 * W1 + x1] - I[y0 * W1 + x1] - I[y1 * W1 + x0] + I[y0 * W1 + x0];
+      const m = s / ((y1 - y0) * (x1 - x0)), v = lum[yy * w + xx];
+      if (v < 215 && v < m - 22) dark[yy * w + xx] = 1;
+    }
+  }
+  const D = (xx, yy) => (xx < 0 || yy < 0 || xx >= w || yy >= h) ? 0 : dark[yy * w + xx];
+  const gap = Math.max(2, Math.round(w * 0.003));
+
+  // horizontal lines
+  const minH = Math.round(w * 0.045);
+  let active = [], hl = [];
+  for (let yy = 0; yy < h; yy++) {
+    const runs = []; let xx = 0;
+    while (xx < w) {
+      if (!dark[yy * w + xx]) { xx++; continue; }
+      const st = xx; let last = xx, cnt = 0;
+      while (xx < w && xx - last <= gap) { if (dark[yy * w + xx]) { last = xx; cnt++; } xx++; }
+      if (last - st >= minH && cnt / (last - st + 1) > 0.45) runs.push({ x1: st, x2: last });
+      xx = last + 1;
+    }
+    const next = [];
+    for (const r of runs) {
+      const L = active.find(l => l.x1 < r.x2 && r.x1 < l.x2 && Math.min(l.x2, r.x2) - Math.max(l.x1, r.x1) > 0.5 * Math.min(l.x2 - l.x1, r.x2 - r.x1));
+      if (L) { L.y2 = yy; L.x1 = Math.min(L.x1, r.x1); L.x2 = Math.max(L.x2, r.x2); next.push(L); }
+      else { const nl = { y1: yy, y2: yy, x1: r.x1, x2: r.x2 }; hl.push(nl); next.push(nl); }
+    }
+    active = next;
+  }
+  const maxT = Math.max(5, Math.round(h * 0.004));
+  const rowFrac = (yy, a, b) => { let s = 0; for (let xx = a; xx <= b; xx++) s += D(xx, yy); return s / (b - a + 1); };
+  hl = hl.filter(l => {
+    if (l.y2 - l.y1 + 1 > maxT) return false;
+    for (const o of [3, 5]) if (rowFrac(l.y1 - o, l.x1, l.x2) > 0.16 || rowFrac(l.y2 + o, l.x1, l.x2) > 0.16) return false;
+    return true;
+  }).map(l => ({ ...l, y: (l.y1 + l.y2) / 2 }));
+
+  // vertical lines
+  const minV = Math.round(h * 0.014);
+  let vl = [];
+  {
+    let act = [];
+    for (let xx = 0; xx < w; xx++) {
+      const runs = []; let yy = 0;
+      while (yy < h) {
+        if (!dark[yy * w + xx]) { yy++; continue; }
+        const st = yy; let last = yy, cnt = 0;
+        while (yy < h && yy - last <= gap) { if (dark[yy * w + xx]) { last = yy; cnt++; } yy++; }
+        if (last - st >= minV && cnt / (last - st + 1) > 0.6) runs.push({ y1: st, y2: last });
+        yy = last + 1;
+      }
+      const next = [];
+      for (const r of runs) {
+        const L = act.find(l => l.y1 < r.y2 && r.y1 < l.y2);
+        if (L) { L.x2 = xx; L.y1 = Math.min(L.y1, r.y1); L.y2 = Math.max(L.y2, r.y2); next.push(L); }
+        else { const nl = { x1: xx, x2: xx, y1: r.y1, y2: r.y2 }; vl.push(nl); next.push(nl); }
+      }
+      act = next;
+    }
+    const colFrac = (xx, a, b) => { let s = 0; for (let yy = a; yy <= b; yy++) s += D(xx, yy); return s / (b - a + 1); };
+    vl = vl.filter(l => l.x2 - l.x1 + 1 <= maxT && colFrac(l.x1 - 4, l.y1, l.y2) < 0.3 && colFrac(l.x2 + 4, l.y1, l.y2) < 0.3).map(l => ({ ...l, x: (l.x1 + l.x2) / 2 }));
+  }
+
+  // cells / blanks
+  const rows = [];
+  hl.sort((a, b) => a.y - b.y);
+  const vAt = (xx, ya, yb) => vl.some(v => Math.abs(v.x - xx) < 8 && v.y1 <= ya + 6 && v.y2 >= yb - 6);
+  for (const L of hl) {
+    if (L.x2 - L.x1 > 0.94 * w) continue;
+    const cuts = vl.filter(v => v.x > L.x1 + 4 && v.x < L.x2 - 4 && v.y1 <= L.y + 5 && v.y2 >= L.y - 5).map(v => v.x).sort((a, b) => a - b);
+    const xs = [L.x1, ...cuts, L.x2];
+    const row = { L, cands: [] };
+    for (let s = 0; s < xs.length - 1; s++) {
+      const a = Math.round(xs[s]), b = Math.round(xs[s + 1]);
+      if (b - a < w * 0.04) continue;
+      let ceil = null;
+      for (const M of hl) {
+        if (M.y >= L.y - h * 0.008) break;
+        const ov = Math.min(M.x2, b) - Math.max(M.x1, a);
+        if (ov > 0.6 * (b - a)) ceil = M;
+      }
+      const gapPx = ceil ? L.y1 - ceil.y2 : Infinity;
+      let top, boxed = false;
+      if (gapPx <= h * 0.075 && vAt(a, ceil.y, L.y) && vAt(b, ceil.y, L.y)) { top = ceil.y2 + 2; boxed = true; }
+      else {
+        top = L.y1 - Math.round(h * 0.024);
+        if (ceil) top = Math.max(top, ceil.y2 + 3);
+        const startsHere = vl.some(v => (Math.abs(v.x - a) < 7 || Math.abs(v.x - b) < 7) && Math.abs(v.y1 - L.y) < 7 && v.y2 > L.y + 12);
+        if (startsHere) continue;
+      }
+      const bot = L.y1 - 2, rx1 = a + 3, rx2 = b - 3;
+      if (bot - top < 7) continue;
+      const bandTop = Math.round(bot - (bot - top) * 0.6);
+      const tol = Math.max(0, Math.floor((bot - bandTop) * 0.03));
+      let best = [0, -1], cur = -1;
+      for (let xx = rx1; xx <= rx2 + 1; xx++) {
+        let ink = 0;
+        if (xx <= rx2) for (let yy = bandTop; yy <= bot; yy++) ink += dark[yy * w + xx];
+        if (xx <= rx2 && ink <= tol) { if (cur < 0) cur = xx; }
+        else if (cur >= 0) { if (xx - 1 - cur > best[1] - best[0]) best = [cur, xx - 1]; cur = -1; }
+      }
+      const ew = best[1] - best[0];
+      if (ew < Math.max(w * 0.045, 0.28 * (b - a))) continue;
+      let ex1 = best[0], ex2 = best[1];
+      if (ex1 > rx1 + 2) ex1 += 4; if (ex2 < rx2 - 2) ex2 -= 4;
+      let ftop = bot;
+      while (ftop > top) {
+        let ink = 0; for (let xx = ex1; xx <= ex2; xx++) ink += dark[(ftop - 1) * w + xx];
+        if (ink > Math.max(1, (ex2 - ex1) * 0.01)) break;
+        ftop--;
+      }
+      if (bot - ftop < h * 0.011) continue;
+      if (!boxed && b - a > 0.6 * w && ftop > top + (bot - top) * 0.12) continue;
+      row.cands.push({ x: ex1 / w, y: (ftop + 1) / h, w: (ex2 - ex1) / w, h: (bot - ftop) / h, boxed, ceil, hasInk: ew < (rx2 - rx1) * 0.9 });
+    }
+    rows.push(row);
+  }
+  // a table header row: every cell has a caption and the row under it is blank cells
+  const out = [];
+  for (const r of rows) {
+    const header = r.cands.length >= 2 && r.cands.every(c => c.boxed && c.hasInk) &&
+      rows.some(o => o !== r && o.cands.length >= 2 && o.cands.every(c => c.boxed && !c.hasInk && c.ceil === r.L));
+    if (!header) for (const c of r.cands) out.push({ x: c.x, y: c.y, w: c.w, h: c.h });
+  }
+  return dedupe(out);
+}
+function overlap(a, b) {
+  const ix = Math.max(0, Math.min(a.x + a.w, b.x + b.w) - Math.max(a.x, b.x));
+  const iy = Math.max(0, Math.min(a.y + a.h, b.y + b.h) - Math.max(a.y, b.y));
+  return ix * iy / Math.min(a.w * a.h, b.w * b.h);
+}
+function dedupe(arr) {
+  const res = [];
+  arr.sort((p, q) => q.w * q.h - p.w * p.h);
+  for (const r of arr) if (!res.some(o => overlap(o, r) > 0.35)) res.push(r);
+  return res;
+}
+function guessType(P, r) {
+  const items = P.textItems; if (!items.length) return { type: 'text', label: '' };
+  const cy = r.y + r.h / 2;
+  let best = null, bd = Infinity;
+  for (const it of items) {
+    const s = it.str.replace(/[_.…\-–:]+/g, ' ').trim(); if (!s) continue;
+    const icy = it.y + it.h / 2;
+    const vOk = Math.abs(icy - cy) < Math.max(r.h, it.h) * 0.9;
+    let dist = Infinity;
+    if (vOk) {
+      if (it.x >= r.x + r.w - 0.01) dist = it.x - (r.x + r.w);
+      else if (it.x + it.w <= r.x + 0.01) dist = r.x - (it.x + it.w);
+    } else if (it.y + it.h <= r.y + 0.005 && r.y - (it.y + it.h) < r.h * 1.6 && it.x < r.x + r.w && it.x + it.w > r.x) {
+      dist = (r.y - (it.y + it.h)) * 2 + 0.02;
+    }
+    if (dist < bd && dist < 0.3) { bd = dist; best = s; }
+  }
+  if (!best) return { type: 'text', label: '' };
+  const rev = [...best].reverse().join('');
+  const t = /תאריך|date|dated/i.test(best) || /ךיראת/.test(best) ? 'date' : /חתימ|signature|sign\b|signed/i.test(best) || /מיתח/.test(best) ? 'signature' : 'text';
+  let label = /[֐-׿]/.test(best) && /^[^֐-׿]*[ךםןףץ]/.test(best) ? rev : best;
+  return { type: t, label: label.slice(0, 40) };
+}
+function autoDetect() {
+  S.fields = [];
+  for (const P of S.pages) {
+    const found = analyzeCanvas(P.canvas).filter(r => !P.widgets.some(wd => overlap(wd, r) > 0.2));
+    for (const wd of P.widgets) addField(P.idx, wd.x, wd.y, wd.w, wd.h, wd.type, wd.label);
+    for (const r of found) {
+      const g = guessType(P, r);
+      addField(P.idx, r.x, r.y, r.w, r.h, g.type, g.label);
+    }
+  }
+  sortFields();
+}
+function sortFields() { S.fields.sort((a, b) => a.page - b.page || (Math.abs(a.y - b.y) < 0.008 ? (b.x + b.w) - (a.x + a.w) : a.y - b.y)); }
+function defaultFs(P, h) { return clamp(h * (P.hPt / P.wPt) * 100 * 0.64, 1.1, 2.6); }
+function addField(page, x, y, w, h, type, label = '') {
+  const P = S.pages[page];
+  const f = { id: uid++, page, x, y, w, h, type, label, value: type === 'checkbox' ? false : '', fs: defaultFs(P, h), font: 'reg' };
+  S.fields.push(f); return f;
+}
+
+/* ---------- rendering ---------- */
+function buildPages() {
+  const host = $('pages'); host.innerHTML = '';
+  for (const P of S.pages) {
+    const wrap = document.createElement('div'); wrap.className = 'pagewrap';
+    if (S.pages.length > 1) { const l = document.createElement('div'); l.className = 'pagelabel'; l.textContent = `עמוד ${P.idx + 1} מתוך ${S.pages.length}`; wrap.appendChild(l); }
+    const pg = document.createElement('div'); pg.className = 'page'; pg.dataset.page = P.idx;
+    pg.style.aspectRatio = `${P.canvas.width} / ${P.canvas.height}`;
+    P.canvas.setAttribute('aria-label', `עמוד ${P.idx + 1}`);
+    pg.appendChild(P.canvas);
+    const ov = document.createElement('div'); ov.className = 'overlay'; pg.appendChild(ov);
+    P.el = pg; P.ov = ov;
+    pg.addEventListener('click', e => onPageClick(e, P));
+    wrap.appendChild(pg); host.appendChild(wrap);
+  }
+  $('drop').hidden = false;
+}
+function fieldInner(f) {
+  if (f.type === 'signature' && f.value) return `<img alt="חתימה" src="${f.value}">`;
+  if (f.type === 'checkbox' && f.value) return `<svg class="chk" viewBox="0 0 24 24"><path d="M4 12.5l5 5L20 6.5" fill="none" stroke="${PEN}" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+  if ((f.type === 'text' || f.type === 'date') && f.value) {
+    const d = document.createElement('div'); d.textContent = f.value;
+    return `<div class="txt ${f.font}" dir="auto" style="font-size:${f.fs}cqw;text-align:${isRtl(f.value) ? 'right' : 'left'}">${d.innerHTML}</div>`;
+  }
+  const lbl = f.label ? f.label : TYPE_NAME[f.type];
+  if (f.type === 'checkbox') return '';
+  return `<div class="ph">${useIcon(ICON[f.type])}<span>${escapeHtml(lbl)}</span></div>`;
+}
+function escapeHtml(s) { return s.replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
+const filled = f => f.type === 'checkbox' ? !!f.value : !!f.value;
+function render() {
+  for (const P of S.pages) P.ov.innerHTML = '';
+  for (const f of S.fields) {
+    const P = S.pages[f.page]; if (!P) continue;
+    const el = document.createElement('div');
+    el.className = 'field ' + (filled(f) ? 'filled' : 'empty') + (S.sel === f.id ? ' sel' : '');
+    el.style.left = f.x * 100 + '%'; el.style.top = f.y * 100 + '%';
+    el.style.width = f.w * 100 + '%'; el.style.height = f.h * 100 + '%';
+    el.dataset.id = f.id; el.tabIndex = 0; el.setAttribute('role', 'button');
+    el.setAttribute('aria-label', `${TYPE_NAME[f.type]}${f.label ? ': ' + f.label : ''}`);
+    el.innerHTML = fieldInner(f);
+    if (S.sel === f.id) {
+      el.insertAdjacentHTML('beforeend', `<span class="handle rs" data-h="rs" title="שינוי גודל"></span><span class="handle del" data-h="del" title="מחיקה"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18" fill="none" stroke-width="3" stroke-linecap="round"/></svg></span>`);
+    }
+    el.addEventListener('pointerdown', e => onFieldDown(e, f, el));
+    el.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openEditor(f); } });
+    P.ov.appendChild(el);
+  }
+  updateStat();
+}
+function updateStat() {
+  const n = S.fields.length, k = S.fields.filter(filled).length;
+  $('statText').innerHTML = S.pages.length ? `<b>${k}</b> מתוך <b>${n}</b> שדות מולאו` + (S.pages.length > 1 ? ` · ${S.pages.length} עמודים` : '') : 'אין מסמך';
+  $('meter').style.width = n ? (k / n * 100) + '%' : '0';
+}
+
+/* ---------- interaction ---------- */
+function onPageClick(e, P) {
+  if (!S.place) {
+    if (e.target === P.ov || e.target === P.canvas) { if (S.sel) { S.sel = null; render(); } }
+    return;
+  }
+  const r = P.el.getBoundingClientRect();
+  const px = (e.clientX - r.left) / r.width, py = (e.clientY - r.top) / r.height;
+  const type = S.place;
+  const sizes = { text: [0.32, 0.03], date: [0.18, 0.03], signature: [0.26, 0.06], checkbox: [0.025, 0.025 * P.wPt / P.hPt] };
+  const [w, h] = sizes[type];
+  const f = addField(P.idx, clamp(px - w / 2, 0, 1 - w), clamp(py - h / 2, 0, 1 - h), w, h, type);
+  setPlace(null);
+  sortFields();
+  S.sel = f.id; render();
+  openEditor(f);
+}
+function setPlace(type) {
+  S.place = type;
+  document.querySelectorAll('[data-add]').forEach(b => b.classList.toggle('on', b.dataset.add === type));
+  $('placeHint').hidden = !type;
+  if (type) $('placeText').textContent = `הקישו על המסמך במקום שבו להוסיף ${TYPE_NAME[type]}`;
+  S.pages.forEach(P => P.el && P.el.classList.toggle('placing', !!type));
+}
+function onFieldDown(e, f, el) {
+  if (S.place) return;
+  e.stopPropagation();
+  const h = e.target.closest('[data-h]');
+  if (h && h.dataset.h === 'del') { e.preventDefault(); removeField(f); return; }
+  const P = S.pages[f.page], r = P.el.getBoundingClientRect();
+  const sx = e.clientX, sy = e.clientY, o = { x: f.x, y: f.y, w: f.w, h: f.h };
+  const resizing = h && h.dataset.h === 'rs';
+  const wasSel = S.sel === f.id;
+  let moved = false;
+  if (!wasSel && !resizing) {
+    // not selected: a tap selects and opens editor; let touch scroll pass
+    const up = ev => { el.removeEventListener('pointerup', up); if (Math.hypot(ev.clientX - sx, ev.clientY - sy) < 8) { S.sel = f.id; render(); openEditor(f); } };
+    el.addEventListener('pointerup', up);
+    return;
+  }
+  e.preventDefault();
+  try { el.setPointerCapture(e.pointerId); } catch (_) {}
+  const move = ev => {
+    const dx = (ev.clientX - sx) / r.width, dy = (ev.clientY - sy) / r.height;
+    if (!moved && Math.hypot(ev.clientX - sx, ev.clientY - sy) < 5) return;
+    moved = true;
+    if (resizing) {
+      // handle sits bottom-left: dragging left widens to the left
+      const nw = clamp(o.w - dx, 0.015, 1), nx = clamp(o.x + o.w - nw, 0, 1);
+      f.x = nx; f.w = o.x + o.w - nx; f.h = clamp(o.h + dy, 0.01, 1 - f.y);
+    } else {
+      f.x = clamp(o.x + dx, 0, 1 - f.w); f.y = clamp(o.y + dy, 0, 1 - f.h);
+    }
+    el.style.left = f.x * 100 + '%'; el.style.top = f.y * 100 + '%'; el.style.width = f.w * 100 + '%'; el.style.height = f.h * 100 + '%';
+  };
+  const up = () => {
+    el.removeEventListener('pointermove', move); el.removeEventListener('pointerup', up); el.removeEventListener('pointercancel', up);
+    if (!moved && !resizing) openEditor(f);
+    if (moved && resizing && f.type !== 'signature' && f.type !== 'checkbox') f.fs = defaultFs(P, f.h);
+    if (moved) { sortFields(); render(); }
+  };
+  el.addEventListener('pointermove', move); el.addEventListener('pointerup', up); el.addEventListener('pointercancel', up);
+}
+function removeField(f) {
+  S.fields = S.fields.filter(x => x !== f);
+  if (S.sel === f.id) S.sel = null;
+  closeEditor(); render();
+}
+
+/* ---------- editor ---------- */
+let edF = null;
+function openEditor(f) {
+  edF = f; S.sel = f.id;
+  $('ed').hidden = false; $('edBg').hidden = false;
+  fillEditor();
+  render();
+  if (f.type === 'date' && !f.value) { f.value = todayStr(); fillEditor(); render(); }
+  if (f.type === 'signature' && !f.value) { if (S.sig) { f.value = S.sig; fillEditor(); render(); } else openPad(); }
+  if (f.type === 'checkbox' && !f.value) { f.value = true; fillEditor(); render(); }
+  scrollFieldIntoView(f);
+  if (f.type === 'text' && matchMedia('(pointer:fine)').matches) setTimeout(() => $('edInput').focus(), 30);
+}
+function scrollFieldIntoView(f) {
+  const el = document.querySelector(`.field[data-id="${f.id}"]`); if (!el) return;
+  const r = el.getBoundingClientRect(), sheetH = $('ed').getBoundingClientRect().height;
+  const visBottom = innerHeight - sheetH - 12;
+  if (r.bottom > visBottom || r.top < 80) window.scrollBy({ top: r.top - Math.max(90, (visBottom - r.height) / 2), behavior: 'smooth' });
+}
+function fillEditor() {
+  const f = edF; if (!f) return;
+  $('edTitle').textContent = f.label || TYPE_NAME[f.type];
+  document.querySelectorAll('#edTypes .chip').forEach(c => c.classList.toggle('on', c.dataset.type === f.type));
+  $('edText').hidden = !(f.type === 'text' || f.type === 'date');
+  $('edSig').hidden = f.type !== 'signature';
+  $('edChk').hidden = f.type !== 'checkbox';
+  $('edDateRow').hidden = f.type !== 'date';
+  $('edLabel').textContent = f.type === 'date' ? 'תאריך (אפשר גם לערוך ידנית)' : 'טקסט';
+  if ($('edInput').value !== (f.value || '')) $('edInput').value = typeof f.value === 'string' ? f.value : '';
+  $('edInput').style.fontFamily = f.font === 'hand' ? 'var(--f-hand)' : 'var(--f-ui)';
+  document.querySelectorAll('[data-font]').forEach(c => c.classList.toggle('on', c.dataset.font === f.font));
+  if (f.type === 'date') {
+    const m = (f.value || '').match(/^(\d{1,2})[\/.\-](\d{1,2})[\/.\-](\d{4})$/);
+    $('edDate').value = m ? `${m[3]}-${m[2].padStart(2, '0')}-${m[1].padStart(2, '0')}` : '';
+  }
+  if (f.type === 'signature') $('edSigPrev').innerHTML = f.value ? `<img alt="חתימה" src="${f.value}">` : '<span class="note">עדיין אין חתימה</span>';
+  if (f.type === 'checkbox') $('edChkLabel').textContent = f.value ? 'הסרת הסימון' : 'סימון ✓';
+}
+function closeEditor() { $('ed').hidden = true; $('edBg').hidden = true; edF = null; }
+$('edBg').onclick = () => { closeEditor(); S.sel = null; render(); };
+$('edDone').onclick = () => { closeEditor(); S.sel = null; render(); };
+$('edDel').onclick = () => edF && removeField(edF);
+$('edInput').addEventListener('input', () => { if (!edF) return; edF.value = $('edInput').value; render(); });
+$('edTypes').addEventListener('click', e => {
+  const c = e.target.closest('[data-type]'); if (!c || !edF) return;
+  const t = c.dataset.type; if (t === edF.type) return;
+  edF.type = t; edF.value = t === 'checkbox' ? false : '';
+  if (t === 'checkbox') { const P = S.pages[edF.page]; const s = Math.min(edF.w, edF.h * P.hPt / P.wPt, 0.03); edF.w = s; edF.h = s * P.wPt / P.hPt; }
+  openEditor(edF);
+});
+document.querySelectorAll('[data-font]').forEach(c => c.onclick = () => { if (!edF) return; edF.font = c.dataset.font; fillEditor(); render(); });
+$('fsUp').onclick = () => { if (!edF) return; edF.fs = Math.min(edF.fs * 1.12, 8); render(); };
+$('fsDown').onclick = () => { if (!edF) return; edF.fs = Math.max(edF.fs / 1.12, 0.5); render(); };
+$('edDate').addEventListener('change', () => { if (!edF) return; const v = $('edDate').value; if (!v) return; const [y, m, d] = v.split('-'); edF.value = `${d}/${m}/${y}`; fillEditor(); render(); });
+$('edToday').onclick = () => { if (!edF) return; edF.value = todayStr(); fillEditor(); render(); };
+$('edSigNew').onclick = () => openPad();
+$('edSigClear').onclick = () => { if (!edF) return; edF.value = ''; fillEditor(); render(); };
+$('edChkToggle').onclick = () => { if (!edF) return; edF.value = !edF.value; fillEditor(); render(); };
+$('edNext').onclick = () => {
+  const i = S.fields.indexOf(edF);
+  const rest = [...S.fields.slice(i + 1), ...S.fields.slice(0, i)];
+  const nx = rest.find(f => !filled(f)) || rest[0];
+  if (nx) openEditor(nx); else toast('אין שדות נוספים');
+};
+
+/* ---------- signature pad ---------- */
+const pad = { cv: $('padCv'), strokes: [], cur: null, dpr: 1 };
+function openPad() {
+  $('pad').hidden = false;
+  requestAnimationFrame(() => {
+    const r = pad.cv.getBoundingClientRect();
+    pad.dpr = Math.min(3, devicePixelRatio || 1);
+    pad.cv.width = Math.round(r.width * pad.dpr); pad.cv.height = Math.round(r.height * pad.dpr);
+    pad.strokes = []; redrawPad();
+  });
+}
+function closePad() { $('pad').hidden = true; }
+function redrawPad() {
+  const c = pad.cv.getContext('2d'); c.clearRect(0, 0, pad.cv.width, pad.cv.height);
+  for (const s of pad.strokes) drawStroke(c, s, 0);
+}
+function drawStroke(c, s, from) {
+  c.strokeStyle = PEN; c.fillStyle = PEN; c.lineCap = 'round'; c.lineJoin = 'round';
+  const p = s.pts;
+  if (p.length === 1) { c.beginPath(); c.arc(p[0].x, p[0].y, p[0].w / 2, 0, 7); c.fill(); return; }
+  for (let i = Math.max(1, from); i < p.length; i++) {
+    const a = p[i - 1], b = p[i];
+    const m0 = i > 1 ? { x: (p[i - 2].x + a.x) / 2, y: (p[i - 2].y + a.y) / 2 } : a;
+    const m1 = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
+    c.lineWidth = (a.w + b.w) / 2;
+    c.beginPath(); c.moveTo(m0.x, m0.y); c.quadraticCurveTo(a.x, a.y, m1.x, m1.y); c.stroke();
+  }
+}
+function padPt(e, prev) {
+  const r = pad.cv.getBoundingClientRect();
+  const x = (e.clientX - r.left) * pad.dpr, y = (e.clientY - r.top) * pad.dpr, t = e.timeStamp;
+  const base = Math.max(2.2, r.width / 160) * pad.dpr;
+  let w = base;
+  if (prev) {
+    const v = Math.hypot(x - prev.x, y - prev.y) / Math.max(1, t - prev.t) / pad.dpr;
+    w = clamp(base * (1.35 - v * 0.35), base * 0.5, base * 1.4);
+    w = prev.w * 0.6 + w * 0.4;
+  }
+  if (e.pointerType === 'pen' && e.pressure > 0) w = base * (0.45 + e.pressure * 1.1);
+  return { x, y, t, w };
+}
+pad.cv.addEventListener('pointerdown', e => {
+  e.preventDefault(); pad.cv.setPointerCapture(e.pointerId);
+  pad.cur = { pts: [padPt(e)] }; pad.strokes.push(pad.cur);
+  drawStroke(pad.cv.getContext('2d'), pad.cur, 0);
+});
+pad.cv.addEventListener('pointermove', e => {
+  if (!pad.cur) return;
+  const evs = e.getCoalescedEvents ? e.getCoalescedEvents() : [e];
+  const start = pad.cur.pts.length;
+  for (const ev of (evs.length ? evs : [e])) { const pr = pad.cur.pts[pad.cur.pts.length - 1]; const p = padPt(ev, pr); if (Math.hypot(p.x - pr.x, p.y - pr.y) > 1) pad.cur.pts.push(p); }
+  drawStroke(pad.cv.getContext('2d'), pad.cur, start);
+});
+const endStroke = () => { pad.cur = null; };
+pad.cv.addEventListener('pointerup', endStroke); pad.cv.addEventListener('pointercancel', endStroke);
+$('padClear').onclick = () => { pad.strokes = []; redrawPad(); };
+$('padCancel').onclick = closePad;
+$('padOk').onclick = () => {
+  if (!pad.strokes.length) { toast('חתמו קודם בתוך המסגרת'); return; }
+  const url = trimCanvas(pad.cv);
+  S.sig = url;
+  try { localStorage.setItem('hotem.sig', url); } catch (e) {}
+  closePad();
+  if (edF && edF.type === 'signature') { edF.value = url; fillEditor(); render(); }
+};
+function trimCanvas(cv) {
+  const c = cv.getContext('2d'), d = c.getImageData(0, 0, cv.width, cv.height).data;
+  let x1 = cv.width, y1 = cv.height, x2 = 0, y2 = 0;
+  for (let y = 0; y < cv.height; y++) for (let x = 0; x < cv.width; x++) if (d[(y * cv.width + x) * 4 + 3] > 8) { if (x < x1) x1 = x; if (x > x2) x2 = x; if (y < y1) y1 = y; if (y > y2) y2 = y; }
+  const pd = 6; x1 = Math.max(0, x1 - pd); y1 = Math.max(0, y1 - pd); x2 = Math.min(cv.width - 1, x2 + pd); y2 = Math.min(cv.height - 1, y2 + pd);
+  const o = document.createElement('canvas'); o.width = x2 - x1 + 1; o.height = y2 - y1 + 1;
+  o.getContext('2d').drawImage(cv, x1, y1, o.width, o.height, 0, 0, o.width, o.height);
+  return o.toDataURL('image/png');
+}
+
+/* ---------- export ---------- */
+function loadImg(src) { return new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = rej; i.src = src; }); }
+function wrapLines(c, text, maxW) {
+  const out = [];
+  for (const para of text.split('\n')) {
+    const words = para.split(/(\s+)/); let line = '';
+    for (const w of words) {
+      const t = line + w;
+      if (line && c.measureText(t.trim()).width > maxW) { out.push(line.trim()); line = w.trimStart(); }
+      else line = t;
+    }
+    out.push(line.trim());
+  }
+  return out;
+}
+async function renderField(f, P) {
+  const SC = 4;
+  const wPt = f.w * P.wPt, hPt = f.h * P.hPt;
+  const cv = document.createElement('canvas');
+  cv.width = Math.max(2, Math.round(wPt * SC)); cv.height = Math.max(2, Math.round(hPt * SC));
+  const c = cv.getContext('2d');
+  c.fillStyle = PEN; c.strokeStyle = PEN;
+  if (f.type === 'signature') {
+    const im = await loadImg(f.value);
+    const k = Math.min(cv.width / im.width, cv.height / im.height);
+    const w = im.width * k, h = im.height * k;
+    c.drawImage(im, (cv.width - w) / 2, (cv.height - h) / 2, w, h);
+  } else if (f.type === 'checkbox') {
+    const s = Math.min(cv.width, cv.height), ox = (cv.width - s) / 2, oy = (cv.height - s) / 2, u = s / 24;
+    c.lineWidth = 2.6 * u * 0.84; c.lineCap = 'round'; c.lineJoin = 'round';
+    const m = v => v * 0.84 + 24 * 0.08;
+    c.beginPath(); c.moveTo(ox + m(4) * u, oy + m(12.5) * u); c.lineTo(ox + m(9) * u, oy + m(17.5) * u); c.lineTo(ox + m(20) * u, oy + m(6.5) * u); c.stroke();
+  } else {
+    const px = f.fs / 100 * P.wPt * SC;
+    const fam = f.font === 'hand' ? '"Amatic SC","Assistant",cursive' : '"Assistant","Arial Hebrew",Arial,sans-serif';
+    try { await document.fonts.load(`${f.font === 'hand' ? 700 : 400} ${Math.round(px)}px ${fam.split(',')[0]}`, f.value); } catch (e) {}
+    c.font = `${f.font === 'hand' ? 700 : 400} ${px}px ${fam}`;
+    const rtl = isRtl(f.value);
+    c.direction = rtl ? 'rtl' : 'ltr'; c.textAlign = rtl ? 'right' : 'left'; c.textBaseline = 'alphabetic';
+    const padX = 0.15 * px, padB = 0.1 * px, lh = 1.25 * px;
+    const lines = wrapLines(c, f.value, cv.width - 2 * padX);
+    const total = lines.length * lh;
+    let y = cv.height - padB - total;
+    const x = rtl ? cv.width - padX : padX;
+    for (const ln of lines) { c.fillText(ln, x, y + lh * 0.8 + (lh - px) / 2); y += lh; }
+  }
+  return cv;
+}
+function rotateCanvas(cv, deg) {
+  if (!deg) return cv;
+  const o = document.createElement('canvas');
+  const swap = deg % 180 !== 0;
+  o.width = swap ? cv.height : cv.width; o.height = swap ? cv.width : cv.height;
+  const c = o.getContext('2d'); c.translate(o.width / 2, o.height / 2); c.rotate(-deg * Math.PI / 180); c.drawImage(cv, -cv.width / 2, -cv.height / 2);
+  return o;
+}
+function canvasBytes(cv, type = 'image/png', q) { return new Promise(r => cv.toBlob(b => b.arrayBuffer().then(a => r(new Uint8Array(a))), type, q)); }
+async function buildPdf() {
+  const { PDFDocument } = PDFLib;
+  let doc, pages;
+  if (S.kind === 'pdf') {
+    doc = await PDFDocument.load(S.bytes, { ignoreEncryption: true });
+    try { doc.getForm().flatten(); } catch (e) {}
+    pages = doc.getPages();
+    // flatten() leaves dangling widget refs in /Annots; drop them so the file stays valid
+    for (const pg of pages) {
+      try {
+        const a = pg.node.Annots(); if (!a) continue;
+        const keep = a.asArray().filter(r => !(r instanceof PDFLib.PDFRef) || doc.context.lookup(r));
+        if (keep.length) pg.node.set(PDFLib.PDFName.of('Annots'), doc.context.obj(keep)); else pg.node.delete(PDFLib.PDFName.of('Annots'));
+      } catch (e) {}
+    }
+  } else {
+    doc = await PDFDocument.create(); pages = [];
+    for (const P of S.pages) {
+      const jpg = await doc.embedJpg(await canvasBytes(P.canvas, 'image/jpeg', 0.9));
+      const pg = doc.addPage([P.wPt, P.hPt]); pg.drawImage(jpg, { x: 0, y: 0, width: P.wPt, height: P.hPt }); pages.push(pg);
+    }
+  }
+  for (const f of S.fields) {
+    if (!filled(f)) continue;
+    const P = S.pages[f.page], pg = pages[f.page]; if (!pg) continue;
+    const cv = rotateCanvas(await renderField(f, P), P.rotation % 360);
+    const png = await doc.embedPng(await canvasBytes(cv));
+    let x, y, w, h;
+    if (S.kind === 'pdf') {
+      const a = P.vp1.convertToPdfPoint(f.x * P.wPt, f.y * P.hPt), b = P.vp1.convertToPdfPoint((f.x + f.w) * P.wPt, (f.y + f.h) * P.hPt);
+      x = Math.min(a[0], b[0]); y = Math.min(a[1], b[1]); w = Math.abs(a[0] - b[0]); h = Math.abs(a[1] - b[1]);
+    } else { x = f.x * P.wPt; w = f.w * P.wPt; h = f.h * P.hPt; y = P.hPt - f.y * P.hPt - h; }
+    pg.drawImage(png, { x, y, width: w, height: h });
+  }
+  doc.setProducer('חותם'); doc.setModificationDate(new Date());
+  return await doc.save();
+}
+
+/* ---------- save & share ---------- */
+let downloads = null;
+const inClaude = !!(window.claude && typeof window.claude.use === 'function');
+if (inClaude) {
+  window.claude.use('downloads').then(d => { downloads = d; }).catch(() => {});
+  setupSmart();
+}
+let lastPdf = null;
+function pdfName() { let n = ($('exName').value || S.name || 'מסמך').trim().replace(/[\\/:*?"<>|]+/g, ' '); if (!/\.pdf$/i.test(n)) n += '.pdf'; return n; }
+async function getPdf() {
+  if (lastPdf && lastPdf.ver === ver) return lastPdf.bytes;
+  busy('מכין PDF…'); await tick();
+  try { const b = await buildPdf(); lastPdf = { ver, bytes: b }; return b; } finally { idle(); }
+}
+let ver = 0;
+function canShareFiles() {
+  try { const f = new File([new Uint8Array([37])], 'a.pdf', { type: 'application/pdf' }); return !!(navigator.canShare && navigator.canShare({ files: [f] })); } catch (e) { return false; }
+}
+function openExport() {
+  if (!S.pages.length) { toast('העלו מסמך קודם'); return; }
+  closeEditor(); S.sel = null; render();
+  $('exName').value = S.name.replace(/\.pdf$/i, '') + (S.sample ? '' : ' - חתום');
+  const empty = S.fields.filter(f => !filled(f)).length;
+  $('exWarn').hidden = !empty;
+  $('exWarn').textContent = empty ? `${empty} שדות עדיין ריקים. שדות ריקים לא יופיעו בקובץ.` : '';
+  $('exShare').hidden = inClaude || !canShareFiles();
+  $('exSave').innerHTML = useIcon('i-dl') + (inClaude ? 'שמירה / שיתוף של ה-PDF' : 'שמירת PDF');
+  $('exSteps').hidden = true; $('exStatus').textContent = ''; $('exStatus').className = 'note';
+  $('ex').hidden = false; $('exBg').hidden = false;
+}
+function closeExport() { $('ex').hidden = true; $('exBg').hidden = true; }
+$('exBg').onclick = closeExport;
+$('bFinish').onclick = openExport;
+function status(msg, cls = '') { $('exStatus').textContent = msg; $('exStatus').className = 'note ' + cls; }
+async function savePdf() {
+  const bytes = await getPdf(), name = pdfName();
+  if (downloads) {
+    try { await downloads.save({ filename: name, data: new Blob([bytes], { type: 'application/pdf' }) }); status(`הקובץ "${name}" נשמר.`, 'ok'); return true; }
+    catch (e) { if (e && e.code === 'declined') { status('השמירה בוטלה.'); return false; } status('השמירה לא זמינה כאן. נסו לפתוח את האפליקציה בדפדפן.', 'err'); return false; }
+  }
+  if (inClaude) { status('השמירה לא זמינה בתצוגה הזו.', 'err'); return false; }
+  const url = URL.createObjectURL(new Blob([bytes], { type: 'application/pdf' }));
+  const a = document.createElement('a'); a.href = url; a.download = name; document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 60000);
+  status(`הקובץ "${name}" הורד למכשיר.`, 'ok'); return true;
+}
+async function shareNative() {
+  const bytes = await getPdf(), name = pdfName();
+  const file = new File([bytes], name, { type: 'application/pdf' });
+  try { await navigator.share({ files: [file], title: name.replace(/\.pdf$/i, ''), text: 'מצורף הטופס החתום' }); status('נשלח לשיתוף.', 'ok'); return true; }
+  catch (e) { if (e && e.name === 'AbortError') { status('השיתוף בוטל.'); return true; } return false; }
+}
+function showSteps(kind) {
+  const msg = encodeURIComponent('שלום, מצורף הטופס החתום.');
+  const link = kind === 'wa' ? `https://wa.me/?text=${msg}` : `mailto:?subject=${encodeURIComponent(pdfName().replace(/\.pdf$/i, ''))}&body=${msg}`;
+  const appName = kind === 'wa' ? 'וואטסאפ' : 'המייל';
+  $('exSteps').innerHTML = `<div>1. הקובץ נשמר במכשיר (בתיקיית ההורדות).</div><div>2. <a href="${link}" target="_blank" rel="noopener">פתחו את ${appName}</a> וצרפו את הקובץ <b dir="auto"></b> כקובץ מצורף.</div>`;
+  $('exSteps').querySelector('b').textContent = pdfName();
+  $('exSteps').hidden = false;
+}
+$('exShare').onclick = () => shareNative();
+$('exSave').onclick = () => savePdf();
+async function viaApp(kind) {
+  if (!inClaude && canShareFiles()) { if (await shareNative()) return; }
+  if (await savePdf()) showSteps(kind);
+}
+$('exWa').onclick = () => viaApp('wa');
+$('exMail').onclick = () => viaApp('mail');
+
+/* ---------- smart detection with Claude (only inside Claude) ---------- */
+let sampler = null;
+async function setupSmart() {
+  try {
+    const s = await window.claude.use('sample'); if (!s) return;
+    const lim = await s.limits().catch(() => null);
+    if (!lim || !lim.images) return;
+    sampler = s; $('bSmart').hidden = false;
+  } catch (e) {}
+}
+async function smartDetect() {
+  if (!sampler || !S.pages.length) return;
+  closeEditor();
+  try {
+    for (const P of S.pages) {
+      busy(`Claude בודק את עמוד ${P.idx + 1}…`);
+      const mine = S.fields.filter(f => f.page === P.idx);
+      const k = Math.min(1, 1400 / P.canvas.width);
+      const c = document.createElement('canvas'); c.width = Math.round(P.canvas.width * k); c.height = Math.round(P.canvas.height * k);
+      const x = c.getContext('2d'); x.drawImage(P.canvas, 0, 0, c.width, c.height);
+      x.lineWidth = 2; x.font = 'bold 16px Arial'; x.textBaseline = 'top';
+      mine.forEach((f, i) => { x.strokeStyle = '#e0115f'; x.strokeRect(f.x * c.width, f.y * c.height, f.w * c.width, f.h * c.height); x.fillStyle = '#e0115f'; x.fillText(String(i + 1), f.x * c.width + 2, f.y * c.height - 17); });
+      const blob = await new Promise(r => c.toBlob(r, 'image/jpeg', 0.82));
+      const list = mine.map((f, i) => `${i + 1}: x=${(f.x * 100).toFixed(1)} y=${(f.y * 100).toFixed(1)} w=${(f.w * 100).toFixed(1)} h=${(f.h * 100).toFixed(1)}`).join('\n');
+      const prompt = `The image is one page of a form that a person needs to fill in and sign. Pink numbered rectangles are candidate fill-in areas found automatically. Boxes are given in percent of page width/height (x,y is the top-left corner).\n\nCandidates:\n${list || '(none)'}\n\nFor each candidate decide: "text", "date", "signature", "checkbox", or "remove" if it is not a place where the person writes (for example a decorative line or a printed area). Give "label": the printed caption that belongs to it, copied in the document's language (short, max 5 words, empty if none).\nThen list places where the person must write, sign, date or tick that no candidate covers ("missed"), with boxes in percent covering only the blank writing area. Do not repeat covered places.\n\nReply with JSON only: {"fields":[{"n":1,"type":"text","label":"..."}],"missed":[{"type":"text","label":"...","x":0,"y":0,"w":0,"h":0}]}`;
+      const res = await sampler.json(prompt, { images: [blob], modelTier: 'default' });
+      const byN = new Map((res && res.fields || []).map(r => [Number(r.n), r]));
+      mine.forEach((f, i) => {
+        const r = byN.get(i + 1); if (!r) return;
+        if (r.type === 'remove') { if (!filled(f)) S.fields = S.fields.filter(z => z !== f); return; }
+        if (TYPE_NAME[r.type] && !filled(f) && r.type !== f.type) { f.type = r.type; f.value = r.type === 'checkbox' ? false : ''; }
+        if (r.label) f.label = String(r.label).slice(0, 40);
+      });
+      for (const m of (res && res.missed || [])) {
+        if (!TYPE_NAME[m.type]) continue;
+        const r = { x: +m.x / 100, y: +m.y / 100, w: +m.w / 100, h: +m.h / 100 };
+        if (!(r.w > 0.005 && r.h > 0.004 && r.x >= 0 && r.y >= 0 && r.x + r.w <= 1.01 && r.y + r.h <= 1.01)) continue;
+        if (S.fields.some(f => f.page === P.idx && overlap(f, r) > 0.3)) continue;
+        if (m.type === 'checkbox') { const s = Math.min(r.w, r.h * P.hPt / P.wPt); r.w = s; r.h = s * P.wPt / P.hPt; }
+        addField(P.idx, r.x, r.y, r.w, r.h, m.type, String(m.label || '').slice(0, 40));
+      }
+    }
+    sortFields(); render(); toast('הזיהוי עודכן. בדקו שהשדות במקום הנכון');
+  } catch (e) {
+    console.error(e);
+    toast(e && e.code === 'not_granted' ? 'כדי להשתמש בזיהוי החכם צריך לאשר את הגישה ל-Claude' : e && e.code === 'rate_limited' ? 'יותר מדי בקשות. נסו שוב בעוד רגע' : 'הזיהוי החכם לא הצליח הפעם', 3500);
+  } finally { idle(); }
+}
+$('bSmart').onclick = smartDetect;
+
+/* ---------- toolbar & files ---------- */
+$('bUpload').onclick = () => $('fileIn').click();
+$('bUpload2').onclick = () => $('fileIn').click();
+$('bCamera').onclick = () => $('camIn').click();
+$('fileIn').onchange = e => { openFiles(e.target.files); e.target.value = ''; };
+$('camIn').onchange = e => { openFiles(e.target.files); e.target.value = ''; };
+document.querySelectorAll('[data-add]').forEach(b => b.onclick = () => {
+  if (!S.pages.length) { toast('העלו מסמך קודם'); return; }
+  closeEditor(); setPlace(S.place === b.dataset.add ? null : b.dataset.add);
+});
+$('placeCancel').onclick = () => setPlace(null);
+$('bRedetect').onclick = async () => {
+  if (!S.pages.length) return;
+  const keep = S.fields.filter(filled);
+  busy('מזהה שדות…'); await tick();
+  autoDetect();
+  S.fields = [...keep, ...S.fields.filter(f => !keep.some(k => k.page === f.page && overlap(k, f) > 0.3))];
+  sortFields(); S.sel = null; render(); idle();
+  toast(`זוהו ${S.fields.length} שדות`);
+};
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') { if (!$('pad').hidden) closePad(); else if (S.place) setPlace(null); else if (!$('ex').hidden) closeExport(); else if (edF) { closeEditor(); S.sel = null; render(); } }
+  if ((e.key === 'Delete' || e.key === 'Backspace') && edF && document.activeElement && document.activeElement.classList.contains('field')) removeField(edF);
+});
+const drop = $('drop');
+['dragenter', 'dragover'].forEach(t => document.addEventListener(t, e => { if (e.dataTransfer && [...e.dataTransfer.types].includes('Files')) { e.preventDefault(); drop.classList.add('over'); } }));
+['dragleave', 'drop'].forEach(t => document.addEventListener(t, e => { if (t === 'dragleave' && e.relatedTarget) return; drop.classList.remove('over'); }));
+document.addEventListener('drop', e => { if (e.dataTransfer && e.dataTransfer.files.length) { e.preventDefault(); openFiles(e.dataTransfer.files); } });
+
+// bump version on every render so exported PDF reflects latest state
+render = (function (r) { return function () { ver++; r(); }; })(render);
+
+/* ---------- sample form ---------- */
+async function loadSample() {
+  try { await Promise.all([document.fonts.load('400 30px "Assistant"', 'א'), document.fonts.load('700 30px "Assistant"', 'א'), document.fonts.load('700 40px "Frank Ruhl Libre"', 'א')]); } catch (e) {}
+  const W = 1240, H = 1754, c = document.createElement('canvas'); c.width = W; c.height = H;
+  const x = c.getContext('2d'); x.fillStyle = '#fff'; x.fillRect(0, 0, W, H);
+  x.fillStyle = '#111'; x.strokeStyle = '#111'; x.direction = 'rtl'; x.textAlign = 'right'; x.textBaseline = 'alphabetic';
+  const items = [];
+  const T = (s, px, py, size = 30, wt = 400, fam = 'Assistant') => { x.font = `${wt} ${size}px "${fam}", Arial`; x.fillText(s, px, py); const m = x.measureText(s).width; items.push({ x: (px - m) / W, y: (py - size * 0.85) / H, w: m / W, h: size / H, str: s }); return m; };
+  const line = (x1, x2, y, t = 2) => { x.fillRect(x1, y, x2 - x1, t); };
+  T('טופס הצטרפות ואישור תנאים', W - 110, 170, 54, 700, 'Frank Ruhl Libre');
+  x.fillStyle = '#555'; T('נא למלא את כל הפרטים בכתב ברור ולחתום בתחתית הטופס', W - 110, 225, 26); x.fillStyle = '#111';
+  line(110, W - 110, 260, 3);
+  T('פרטים אישיים', W - 110, 330, 34, 700);
+  const rows = [['שם מלא:', 400], ['מספר תעודת זהות:', 470], ['כתובת:', 540], ['טלפון נייד:', 610]];
+  for (const [lab, y] of rows) { const m = T(lab, W - 110, y, 30); line(110, W - 110 - m - 18, y + 4); }
+  T('דואר אלקטרוני:', W - 110, 680, 30); { const m = x.measureText('דואר אלקטרוני:').width; line(W / 2 + 40, W - 110 - m - 18, 684); }
+  T('מקצוע:', W / 2 - 20, 680, 30); { const m = x.measureText('מקצוע:').width; line(110, W / 2 - 20 - m - 18, 684); }
+  // table
+  T('פרטי איש קשר לחירום', W - 110, 790, 34, 700);
+  const tx1 = 110, tx2 = W - 110, ty = 820, rh = 64, cols = [tx2, tx2 - 300, tx2 - 650, tx1];
+  x.lineWidth = 2;
+  for (let r = 0; r <= 3; r++) line(tx1, tx2, ty + r * rh, 2);
+  for (const cx of cols) x.fillRect(cx - 1, ty, 2, rh * 3 + 2);
+  x.fillStyle = '#eef0f5'; x.fillRect(tx1 + 1, ty + 2, tx2 - tx1 - 2, rh - 2); x.fillStyle = '#111';
+  T('שם', cols[0] - 20, ty + 42, 28, 700); T('קרבה', cols[1] - 20, ty + 42, 28, 700); T('טלפון', cols[2] - 20, ty + 42, 28, 700);
+  // terms
+  T('הצהרה', W - 110, 1130, 34, 700);
+  const terms = ['אני מאשר/ת כי הפרטים שמסרתי נכונים ומלאים.', 'קראתי והבנתי את תנאי השימוש ואני מסכים/ה להם.'];
+  terms.forEach((s, i) => { const y = 1195 + i * 62; x.lineWidth = 2.5; x.strokeRect(W - 110 - 30, y - 26, 30, 30); T(s, W - 110 - 48, y, 28); });
+  // sign
+  const sy = 1480;
+  T('תאריך:', W - 110, sy, 30); { const m = x.measureText('תאריך:').width; line(W - 110 - m - 260, W - 110 - m - 16, sy + 4); }
+  T('חתימה:', W / 2 - 40, sy, 30); { const m = x.measureText('חתימה:').width; line(110, W / 2 - 40 - m - 16, sy + 4); }
+  x.fillStyle = '#777'; T('טופס לדוגמה בלבד', W / 2 + 120, 1660, 22);
+  S.kind = 'images'; S.pdf = null; S.bytes = null; S.pages = []; S.fields = [];
+  addImagePage(c, W, H, items);
+  S.name = 'טופס הצטרפות - דוגמה'; S.sample = true;
+  buildPages(); autoDetect();
+  // add checkbox fields over the printed squares
+  terms.forEach((s, i) => { const y = 1195 + i * 62; addField(0, (W - 140 + 2) / W, (y - 24) / H, 26 / W, 26 / H, 'checkbox'); });
+  sortFields();
+  const name = S.fields.find(f => f.label && f.label.includes('שם מלא'));
+  if (name) name.value = 'ישראל ישראלי';
+  const d = S.fields.find(f => f.type === 'date'); if (d) d.value = todayStr();
+  render();
+  $('sampleBanner').hidden = false;
+}
+if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(() => {});
+loadSample();
+})();
+</script>
+</body></html>
