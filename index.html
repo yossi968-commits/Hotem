@@ -1162,8 +1162,24 @@ async function loadSample() {
   render();
   $('sampleBanner').hidden = false;
 }
+/* ---------- documents shared into the installed app (Android share sheet) ---------- */
+async function loadShared() {
+  if (!/[?&]shared=1/.test(location.search) || !('caches' in window)) return false;
+  try {
+    const c = await caches.open('hotem-share'), files = [];
+    for (const k of await c.keys()) {
+      const r = await c.match(k); const b = await r.blob();
+      files.push(new File([b], decodeURIComponent(r.headers.get('x-name') || 'מסמך'), { type: b.type }));
+      await c.delete(k);
+    }
+    history.replaceState(null, '', location.pathname);
+    if (!files.length) return false;
+    await openFiles(files);
+    return S.pages.length > 0;
+  } catch (e) { return false; }
+}
 if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(() => {});
-loadSample();
+loadShared().then(ok => { if (!ok) loadSample(); });
 })();
 </script>
 </body></html>
